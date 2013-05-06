@@ -83,8 +83,8 @@ $(document).ready(function() {
                 if(capByHeight < capByWidth) spacePerTile = capByHeight;
                 else spacePerTile = capByWidth;
 
-                var ts = Math.ceil(spacePerTile *.93);//tile size
-                var tm = Math.ceil(spacePerTile *.005);//tile padding
+                var ts = Math.ceil(spacePerTile *.85);//tile size
+                var tm = Math.ceil(spacePerTile *.01);//tile padding
 
                 thisClient.tile = {
                     w   : ts,
@@ -216,9 +216,9 @@ $(document).ready(function() {
 
             if(animate) {
                 //get accessor:
-                var $theTile = $('.'+this.model.current['rows'][row][col].accessor);
-                console.log($theTile );
-                $theTile.switchClass( "p1", "p2.owned", 1000 );
+//                var $theTile = $('.'+this.model.current['rows'][row][col].accessor);
+//                console.log($theTile );
+//                $theTile.switchClass( "p1", "p2.owned", 1000 );
             }
 
             modelToUse = this.model.current['rows'][Tile.row][Tile.col];
