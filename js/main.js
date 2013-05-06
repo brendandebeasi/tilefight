@@ -1,18 +1,23 @@
-var sd;
+var sd,that;
 $(document).ready(function() {
     $.tf = function($el) {
+        that                            = this;
         this.$el                        = $el;
         this.turn                       = 'p1';
         this.currentPlayer              = {};
         this.playerList                 = [];
         this.accessorPattern            = /R([0-9])C([0-9])/;
+        this.boardSelector              = '.bd';
+        this.headerSelector             = 'header';
         this.numRows                    = 5;
         this.lastTileClicked            = {};
         this.lastTilePreviewed          = {};
+        this.client                     = {};
         this.model                      = {
             'current'                       : {},
             'preview'                       : {}
         };
+
         this.gameMode                   = 'BLOOM'//CLASSIC-SURROUNDED-LOCK,CLASSIC-TOUCHING-LOCK,BLOOM,MAZE,RANDOM,SCATTER
         this.view                       = {};
         this.numCols                    = 5;
@@ -37,6 +42,80 @@ $(document).ready(function() {
             this.accessor                   = null;
             this.owner                      = null;
         }
+
+        this.Models.Client              = function($el) {
+            var thisClient                  = this;
+            this.perspective                = null;
+            this.isPortrait                 = null;
+            this.isLandscape                = null;
+            this.viewport                   = {
+                w:  0,
+                h:  0
+            };
+            this.container                  = {
+                w   : 0,
+                h   : 0,
+                m   : 0
+            }
+            this.header                     = {
+                w   : 0,
+                h   : 0
+            }
+            this.tile                       = {
+                w   : 0,//width
+                h   : 0,//height
+                m   : 0,//margin
+                p   : 0//padding
+            }
+            this.applySizing          = function() {
+                $el.find(that.headerSelector).css({height:this.header.h, width: this.header.w});
+                $el.find(that.boardSelector).css({height:this.container.h, width: this.container.w, margin: this.container.m});
+                $el.find('.col').css({height:this.tile.h, width: this.tile.w, margin: this.tile.m});
+            }
+            this.determineTileSize          = function() {
+                var spacePerTile;
+
+                if(this.isPortrait) {
+                    //if portrait get cap size by dividing width / # cols
+                    spacePerTile = Math.floor(thisClient.viewport.w / that.numCols);
+                }
+                else {//landscape
+                    spacePerTile = Math.floor((thisClient.viewport.h - thisClient.header.h) / that.numRows) * .95;
+                }
+                var ts = Math.floor(spacePerTile *.95);//tile size
+                var tm = Math.floor(spacePerTile *.05);//tile padding
+//debugger;
+
+                thisClient.tile = {
+                    w   : ts,
+                    h   : ts,
+                    m   : tm
+                };
+
+            };
+            this.determineSizes             = function() {
+                this.isPortrait     = !!(this.viewport.h > this.viewport.w);
+                this.isLandscape    = !!(this.viewport.h < this.viewport.w);
+                this.viewport.h     = $el.parent().parent().height();
+                this.viewport.w     = $el.parent().parent().width();
+
+                this.header.h       = $el.find('header').height();
+                this.header.w       = this.viewport.w;
+
+                this.determineTileSize(this);
+
+                this.container.h    = this.viewport.h - this.header.h;
+                this.container.w    = (this.tile.w + (this.tile.m * 2)) * that.numCols;
+                this.container.m    = '0 ' + ((this.viewport.w - (this.tile.w + (this.tile.m * 2)) * that.numCols) / 2) + 'px';
+//debugger;
+                this.applySizing();
+            }
+            this.init                       = function() {
+                this.determineSizes();
+            };
+
+            this.init();
+        };
 
         this.Models.Row                 = function() {
         };
@@ -66,7 +145,6 @@ $(document).ready(function() {
                     newTile.row=row;
                     newTile.col=col;
                     newTile.accessor='R'+row+'C'+col;
-                    console.log(newTile);
                     modelToSave.rows[row][col] = newTile;
                 }
             }
@@ -74,7 +152,11 @@ $(document).ready(function() {
             this.model.current = modelToSave;//                                 save to model
             this.model.preview = new this.Models.Board;//                                 save to model
 
+
             this.declareHelpers();
+            this.render();//                                       fire renderBoard
+
+            this.client = new this.Models.Client(this.$el);
             this.render();//                                       fire renderBoard
         };
 
@@ -85,9 +167,11 @@ $(document).ready(function() {
 
                 if(typeof preview === 'undefined') preview = false;
                 preview ? modelToUse = this.model.preview : modelToUse = this.model.current;
-                this.view.board = this.$el.find('.bd').html(this.Templates.Board(modelToUse));
-                this.view.header = this.$el.find('header').html(this.Templates.Head(modelToUse));
+                this.view.board = this.$el.find(this.boardSelector).html(this.Templates.Board(modelToUse));
+                this.view.header = this.$el.find(this.headerSelector).html(this.Templates.Head(modelToUse));
                 this.bind();
+//                debugger;
+                if(typeof this.client !== 'undefined' && this.client.isPortrait != null) this.client.applySizing();
             }
             else this.endGame();
         };
@@ -144,9 +228,12 @@ $(document).ready(function() {
         }
 
         this.bind                       = function() {
-            var that = this;
             $('.row .col',$el).mousedown(function(e) {       that.previewMove(e);});
             $('.row .col',$el).mouseup(function(e) {         that.makeMove(e);});
+            $(window).resize(function() {
+               that.client.determineSizes();
+               that.client.applySizing();
+            });
         }
         this.getScoreForPlayer          = function(playerNum) {
             return this.$el.find('.col.p' + playerNum).length;
@@ -192,7 +279,6 @@ $(document).ready(function() {
                         if(col < this.numCols - 1) tiles.push(this.model.current['rows'][row][col+1]);//     if not on bottom row get bottom col
                         //iterate every col
                         for(i=0;i<tiles.length;i++) {
-                            console.log(tiles[i]);
                             if(typeof tiles[i].owner !== 'undefined' && tiles[i].owner != null) {
                                 if(tiles[i].owner.num == this.model.current['rows'][row][col].owner.num) ownedTiles.push(tiles[i]);
                             }
@@ -200,7 +286,6 @@ $(document).ready(function() {
                         if(tiles.length == ownedTiles.length && ownedTiles.length != 0)
                         {
                             var surroundedTile = this.getByRC(row,col);
-                            console.log(surroundedTile);
                             surroundedTile.status = 'locked';
                             surroundedTiles.push(surroundedTile);
                         }
@@ -208,7 +293,6 @@ $(document).ready(function() {
 
                 }
             }
-//            debugger;
             return surroundedTiles;
         }
         this.getTouchingTiles           = function() {

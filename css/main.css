@@ -322,15 +322,11 @@ header .score {
 }
 
 .bd {
-
+    margin: auto;
 }
 .row {
-    margin-top: 7px;
 }
 .col {
-    margin-right: 1.5%;
-    width: 18%;
-    height: 64px;
     float: left;
 }
 .col, .score .p1.neutral, .score .p2.neutral {
