@@ -83,7 +83,7 @@ $(document).ready(function() {
                 if(capByHeight < capByWidth) spacePerTile = capByHeight;
                 else spacePerTile = capByWidth;
 
-                var ts = Math.ceil(spacePerTile *.95);//tile size
+                var ts = Math.ceil(spacePerTile *.93);//tile size
                 var tm = Math.ceil(spacePerTile *.005);//tile padding
 
                 thisClient.tile = {
