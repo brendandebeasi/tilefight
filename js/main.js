@@ -209,20 +209,10 @@ $(document).ready(function() {
             preview ? modelToUse = this.model.preview : modelToUse = this.model.current;
             return modelToUse['rows'][row][col];
         }
-        this.setByRC                    = function(row,col,Tile,preview,animate) {
+        this.setByRC                    = function(row,col,Tile,preview) {
             var modelToUse;
             if(typeof preview === 'undefined') preview = false;
-            if(typeof animate === 'undefined') animate = false;
-
-            if(animate) {
-                //get accessor:
-//                var $theTile = $('.'+this.model.current['rows'][row][col].accessor);
-//                console.log($theTile );
-//                $theTile.switchClass( "p1", "p2.owned", 1000 );
-            }
-
-            modelToUse = this.model.current['rows'][Tile.row][Tile.col];
-            preview ? this.model.preview['rows'][Tile.row][Tile.col] =  modelToUse : this.model.current['rows'][Tile.row][Tile.col] = modelToUse;
+            this.model.current['rows'][Tile.row][Tile.col] = Tile;
         }
         this.setByAccessor              = function(accessor,Tile,preview) {
             if(typeof Tile.accessor !== 'undefined') {
@@ -257,21 +247,34 @@ $(document).ready(function() {
         }
 
         this.previewMove                = function(e) {
-            if($(e.target).hasClass('col')) {
-                var accessor = this.parseAccessorFromRawClass(e.target.className);
-                var Tiles = this.determineAffectedSquares(this.getByAccessor(accessor));
-                this.claimSquares(Tiles);
-                this.render();
-            }
+//            if($(e.target).hasClass('col')) {
+//                var accessor = this.parseAccessorFromRawClass(e.target.className);
+//                var Tiles = this.determineAffectedSquares(this.getByAccessor(accessor));
+//                this.claimSquares(Tiles);
+//                this.render();
+//            }
         };
 
         this.makeMove                   = function(e){
-            if($(e.target).hasClass('col')) {
+            if($(e.target).hasClass('col') && !$(e.target).hasClass('locked')) {
+
                 var accessor = this.parseAccessorFromRawClass(e.target.className);
-                var Tiles = this.determineAffectedSquares(this.getByAccessor(accessor));
+                var Tile  = this.getByAccessor(accessor);
+                var Tiles = that.determineAffectedSquares(Tile);
+                var affectedTiles  = [];
+
                 this.claimSquares(Tiles,true);
-                this.endTurn();
-                this.render();
+
+                for(i=0;i<Tiles.length;i++) {
+                    if(typeof Tiles[i] != 'undefined' && typeof Tiles[i].accessor != 'undefined') {
+                        affectedTiles.push('.'+Tiles[i].accessor);
+                    }
+                }
+                var br=this;//maintain backref
+                $(affectedTiles.join(', ')).switchClass( "p1,p2,p3,p4", "p" + (this.currentPlayer +1 ), 175,'easeInOutSine',function(){
+                    br.render();
+                    br.endTurn();
+                });
             }
         };
         this.getSurroundedTiles         = function() {
@@ -307,62 +310,49 @@ $(document).ready(function() {
 
         }
         this.determineAffectedSquares   = function(Tile) {
-            if(Tile.status != 'locked')
-            {
-                var as= [];//                   affected squares
+            var as= [];//                   affected squares
 
-                switch(this.gameMode) {
-                    case 'CLASSIC-SURROUNDED-LOCK' :
-                        as.concat(this.getSurroundedTiles());
-                        break;
-                    case 'BLOOM' :
-                        if(Tile.row != 0) {//            if not in top row get col num above
-                            as.push(this.model.current.rows[Tile.row-1][Tile.col]);
-                        }
-                        if(Tile.col != 0) {//            if not in top row get col num to left
-                            as.push(this.model.current.rows[Tile.row][Tile.col-1]);
-                        }
-                        if(Tile.row < this.numRows - 1) {//            if not on right col get col to right
-                            as.push(this.model.current.rows[Tile.row+1][Tile.col]);
-                        }
-                        if(Tile.col < this.numCols - 1) {//            if not on bottom row get bottom col
-                            as.push(this.model.current.rows[Tile.row][Tile.col+1]);
-                        }
+            switch(this.gameMode) {
+                case 'CLASSIC-SURROUNDED-LOCK' :
+                    as.concat(this.getSurroundedTiles());
+                    break;
+                case 'BLOOM' :
+                    if(Tile.row != 0) {//            if not in top row get col num above
+                        as.push(this.model.current.rows[Tile.row-1][Tile.col]);
+                    }
+                    if(Tile.col != 0) {//            if not in top row get col num to left
+                        as.push(this.model.current.rows[Tile.row][Tile.col-1]);
+                    }
+                    if(Tile.row < this.numRows - 1) {//            if not on right col get col to right
+                        as.push(this.model.current.rows[Tile.row+1][Tile.col]);
+                    }
+                    if(Tile.col < this.numCols - 1) {//            if not on bottom row get bottom col
+                        as.push(this.model.current.rows[Tile.row][Tile.col+1]);
+                    }
+                    //make sure none of the squares are mo
+                    for(i=0;i<as.length;i++) if(as[i].status == 'locked') as.splice(i,1);
 
-                        //make sure none of the squares are locked
-                        for(i=0;i<as.length;i++) if(as[i].status == 'locked') as.splice(i,1);
-
-                        Tile.status = 'locked';
-                        break;
-                }
-
-
-                as.push(Tile);
-
-                return as;
+                    Tile.status = 'locked';
+                    break;
             }
-            else return [];
+
+
+            as.push(Tile);
+            return as;
         }
 
         this.claimSquares              = function(Tiles,preview) {
             var modelToUse;
             if(typeof preview === 'undefined') preview = false;
-            preview ? modelToUse = this.model.preview : modelToUse = this.model.current;
 
             for(i=0;i<Tiles.length;i++) this.claimSquare(Tiles[i],preview);
         }
 
         this.claimSquare                 = function(Tile,preview) {
+            var backRef = this;
             var modelToUse;
-            if(typeof preview === 'undefined') preview = false;
-            preview ? modelToUse = this.model.preview : modelToUse = this.model.current;
-
-            if(typeof Tile !== 'undefined' && typeof Tile.accessor !== 'undefined') {
-                Tile.owner = this.playerList[this.currentPlayer];
-                if(Tile.status != 'locked') Tile.status = 'owned';
-
-                this.setByRC(Tile.row,Tile.col, Tile, preview,true);
-            }
+            Tile.owner = this.playerList[this.currentPlayer];
+            this.setByRC(Tile.row,Tile.col, Tile, preview);
         }
         this.endTurn                    = function() {
             if(this.currentPlayer < (this.playerList.length - 1)) this.currentPlayer++;
