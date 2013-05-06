@@ -80,8 +80,9 @@ $(document).ready(function() {
                     spacePerTile = Math.floor(thisClient.viewport.w / that.numCols);
                 }
                 else {//landscape
-                    spacePerTile = Math.floor((thisClient.viewport.h - thisClient.header.h) / that.numRows) * .95;
+                    spacePerTile = Math.floor((thisClient.viewport.h - thisClient.header.h) / that.numRows);
                 }
+                spacePerTile = spacePerTile * .95;
                 var ts = Math.floor(spacePerTile *.95);//tile size
                 var tm = Math.floor(spacePerTile *.05);//tile padding
 //debugger;
