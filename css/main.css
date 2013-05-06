@@ -330,7 +330,7 @@ header .score {
 .col {
     margin-right: 1.5%;
     width: 18%;
-    height: 63px;
+    height: 64px;
     float: left;
 }
 .col, .score .p1.neutral, .score .p2.neutral {
