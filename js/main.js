@@ -10,6 +10,7 @@ $(document).ready(function() {
         this.boardSelector              = '.bd';
         this.headerSelector             = 'header';
         this.numRows                    = 5;
+        this.numCols                    = 5;
         this.lastTileClicked            = {};
         this.lastTilePreviewed          = {};
         this.client                     = {};
@@ -18,9 +19,8 @@ $(document).ready(function() {
             'preview'                       : {}
         };
 
-        this.gameMode                   = 'BLOOM'//CLASSIC-SURROUNDED-LOCK,CLASSIC-TOUCHING-LOCK,BLOOM,MAZE,RANDOM,SCATTER
+        this.gameMode                   = 'BLOOM'//CLASSIC-SURROUNDED-LOCK,CLASSIC-TOUCHING-LOCK,BLOOM,BLOOM-PLUs,MAZE,RANDOM,SCATTER
         this.view                       = {};
-        this.numCols                    = 5;
         this.Templates                  = {};
         this.Templates.Board            = Handlebars.compile($("#board-template").html());
         this.Templates.Head             = Handlebars.compile($("#header-template").html());
@@ -55,7 +55,8 @@ $(document).ready(function() {
             this.container                  = {
                 w   : 0,
                 h   : 0,
-                m   : 0
+                m   : 0,
+                p   : 0
             }
             this.header                     = {
                 w   : 0,
@@ -69,23 +70,21 @@ $(document).ready(function() {
             }
             this.applySizing          = function() {
                 $el.find(that.headerSelector).css({height:this.header.h, width: this.header.w});
-                $el.find(that.boardSelector).css({height:this.container.h, width: this.container.w, margin: this.container.m});
+                $el.find(that.boardSelector).css({height:this.container.h, width: this.container.w, margin: this.container.m,padding: this.container.p});
                 $el.find('.col').css({height:this.tile.h, width: this.tile.w, margin: this.tile.m});
             }
-            this.determineTileSize          = function() {
+            this.determineTileSize          = function(cpn) {
+                //cpn is the container padding, so that needs to work out
                 var spacePerTile;
 
-                if(this.isPortrait) {
-                    //if portrait get cap size by dividing width / # cols
-                    spacePerTile = Math.floor(thisClient.viewport.w / that.numCols);
-                }
-                else {//landscape
-                    spacePerTile = Math.floor((thisClient.viewport.h - thisClient.header.h) / that.numRows);
-                }
-                spacePerTile = spacePerTile * .95;
-                var ts = Math.floor(spacePerTile *.90);//tile size
-                var tm = Math.floor(spacePerTile *.05);//tile padding
-//debugger;
+                capByWidth  = ((thisClient.viewport.w ) / that.numCols);
+                capByHeight = ((thisClient.viewport.h - thisClient.header.h) / that.numRows);
+
+                if(capByHeight < capByWidth) spacePerTile = capByHeight;
+                else spacePerTile = capByWidth;
+
+                var ts = Math.ceil(spacePerTile *.95);//tile size
+                var tm = Math.ceil(spacePerTile *.005);//tile padding
 
                 thisClient.tile = {
                     w   : ts,
@@ -95,20 +94,21 @@ $(document).ready(function() {
 
             };
             this.determineSizes             = function() {
+                var cpn = 10;//container padding as an int
                 this.isPortrait     = !!(this.viewport.h > this.viewport.w);
                 this.isLandscape    = !!(this.viewport.h < this.viewport.w);
                 this.viewport.h     = $el.parent().parent().height();
                 this.viewport.w     = $el.parent().parent().width();
 
-                this.header.h       = $el.find('header').height();
+                this.header.h       = $el.find('header').outerHeight();
                 this.header.w       = this.viewport.w;
 
-                this.determineTileSize(this);
+                this.determineTileSize(cpn);
 
-                this.container.h    = this.viewport.h - this.header.h;
-                this.container.w    = (this.tile.w + (this.tile.m * 2)) * that.numCols;
+                this.container.p    = cpn.toString();
+                this.container.h    = this.viewport.h - this.header.h - (cpn*2);
+                this.container.w    = ((this.tile.w + (this.tile.m * 2)) * that.numCols) + (cpn*2);
                 this.container.m    = '0 ' + ((this.viewport.w - (this.tile.w + (this.tile.m * 2)) * that.numCols) / 2) + 'px';
-//debugger;
                 this.applySizing();
             }
             this.init                       = function() {
@@ -171,7 +171,6 @@ $(document).ready(function() {
                 this.view.board = this.$el.find(this.boardSelector).html(this.Templates.Board(modelToUse));
                 this.view.header = this.$el.find(this.headerSelector).html(this.Templates.Head(modelToUse));
                 this.bind();
-//                debugger;
                 if(typeof this.client !== 'undefined' && this.client.isPortrait != null) this.client.applySizing();
             }
             else this.endGame();
@@ -210,12 +209,20 @@ $(document).ready(function() {
             preview ? modelToUse = this.model.preview : modelToUse = this.model.current;
             return modelToUse['rows'][row][col];
         }
-        this.setByRC                    = function(row,col,Tile,preview) {
+        this.setByRC                    = function(row,col,Tile,preview,animate) {
             var modelToUse;
             if(typeof preview === 'undefined') preview = false;
+            if(typeof animate === 'undefined') animate = false;
+
+            if(animate) {
+                //get accessor:
+                var $theTile = $('.'+this.model.current['rows'][row][col].accessor);
+                console.log($theTile );
+                $theTile.switchClass( "p1", "p2.owned", 1000 );
+            }
 
             modelToUse = this.model.current['rows'][Tile.row][Tile.col];
-            preview ? this.model.preview =  modelToUse : this.model.current = modelToUse;
+            preview ? this.model.preview['rows'][Tile.row][Tile.col] =  modelToUse : this.model.current['rows'][Tile.row][Tile.col] = modelToUse;
         }
         this.setByAccessor              = function(accessor,Tile,preview) {
             if(typeof Tile.accessor !== 'undefined') {
@@ -342,13 +349,19 @@ $(document).ready(function() {
             if(typeof preview === 'undefined') preview = false;
             preview ? modelToUse = this.model.preview : modelToUse = this.model.current;
 
-            for(i=0;i<Tiles.length;i++) {
+            for(i=0;i<Tiles.length;i++) this.claimSquare(Tiles[i],preview);
+        }
 
-                if(typeof Tiles[i] !== 'undefined' && typeof Tiles[i].accessor !== 'undefined') {
-                    Tiles[i].owner = this.playerList[this.currentPlayer];
-                    if(Tiles[i].status != 'locked') Tiles[i].status = 'owned';
-                    this.setByRC(Tiles[i].row,Tiles[i].col, Tiles[i], true);
-                }
+        this.claimSquare                 = function(Tile,preview) {
+            var modelToUse;
+            if(typeof preview === 'undefined') preview = false;
+            preview ? modelToUse = this.model.preview : modelToUse = this.model.current;
+
+            if(typeof Tile !== 'undefined' && typeof Tile.accessor !== 'undefined') {
+                Tile.owner = this.playerList[this.currentPlayer];
+                if(Tile.status != 'locked') Tile.status = 'owned';
+
+                this.setByRC(Tile.row,Tile.col, Tile, preview,true);
             }
         }
         this.endTurn                    = function() {
