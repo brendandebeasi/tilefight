@@ -7,6 +7,8 @@ $(document).ready(function() {
         this.playerList                 = [];
         this.accessorPattern            = /R([0-9])C([0-9])/;
         this.numRows                    = 5;
+        this.lastTileClicked            = {};
+        this.lastTilePreviewed          = {};
         this.model                      = {
             'current'                       : {},
             'preview'                       : {}
@@ -230,10 +232,10 @@ $(document).ready(function() {
         }
         this.endGame                    = function() {
             if(this.getScoreForPlayer(0) < this.getScoreForPlayer(1)) {
-                alert('Player 1 (blue) wins!')
+                alert('Player 1 (red) wins!')
             }
             else {
-                alert('Player 2 (red) wins!')
+                alert('Player 2 (blue) wins!')
             }
             window.location.reload();
         }
