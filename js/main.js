@@ -13,6 +13,7 @@ $(document).ready(function() {
             'current'                       : {},
             'preview'                       : {}
         };
+        this.gameMode                   = 'BLOOM'//CLASSIC-SURROUNDED-LOCK,CLASSIC-TOUCHING-LOCK,BLOOM,MAZE,RANDOM,SCATTER
         this.view                       = {};
         this.numCols                    = 5;
         this.Templates                  = {};
@@ -118,13 +119,11 @@ $(document).ready(function() {
 
             return modelToUse['rows'][loc.row][loc.col];
         }
-        this.getByRC                    = function(row,col,Tile,preview) {
-            if(typeof Tile.accessor !== 'undefined') {
-                var modelToUse;
-                if(typeof preview === 'undefined') preview = false;
-                preview ? modelToUse = this.model.preview : modelToUse = this.model.current;
-                modelToUse['rows'][row + 1][col +1 ] = Tile;
-            }
+        this.getByRC                    = function(row,col,preview) {
+            var modelToUse;
+            if(typeof preview === 'undefined') preview = false;
+            preview ? modelToUse = this.model.preview : modelToUse = this.model.current;
+            return modelToUse['rows'][row][col];
         }
         this.setByRC                    = function(row,col,Tile,preview) {
             var modelToUse;
@@ -180,32 +179,72 @@ $(document).ready(function() {
                 this.render();
             }
         };
+        this.getSurroundedTiles         = function() {
+            var surroundedTiles=[];//surrounded files array
+            var ownedTiles=[];
+            for(row=0;row<this.numRows;row++) {//                       create rows
+                for(col=0;col<this.numCols;col++) {//                   create cols inside rows
+                    if(typeof this.model.current['rows'][row][col].owner !== 'undefined' && this.model.current['rows'][row][col].owner != null) {
+                        tiles=[];
+                        if(row != 0) tiles.push(this.model.current['rows'][row-1][col]);//                   if not in top row get col num above
+                        if(col != 0) tiles.push(this.model.current['rows'][row][col-1]);//                     if not in top row get col num to left
+                        if(row < this.numRows - 1) tiles.push(this.model.current['rows'][row+1][col]);//     if not on right col get col to right
+                        if(col < this.numCols - 1) tiles.push(this.model.current['rows'][row][col+1]);//     if not on bottom row get bottom col
+                        //iterate every col
+                        for(i=0;i<tiles.length;i++) {
+                            console.log(tiles[i]);
+                            if(typeof tiles[i].owner !== 'undefined' && tiles[i].owner != null) {
+                                if(tiles[i].owner.num == this.model.current['rows'][row][col].owner.num) ownedTiles.push(tiles[i]);
+                            }
+                        }
+                        if(tiles.length == ownedTiles.length && ownedTiles.length != 0)
+                        {
+                            var surroundedTile = this.getByRC(row,col);
+                            console.log(surroundedTile);
+                            surroundedTile.status = 'locked';
+                            surroundedTiles.push(surroundedTile);
+                        }
+                    }
 
+                }
+            }
+//            debugger;
+            return surroundedTiles;
+        }
+        this.getTouchingTiles           = function() {
+
+        }
         this.determineAffectedSquares   = function(Tile) {
             if(Tile.status != 'locked')
             {
                 var as= [];//                   affected squares
 
-                if(Tile.row != 0) {//            if not in top row get col num above
-                    as.push(this.model.current.rows[Tile.row-1][Tile.col]);
-                }
-                if(Tile.col != 0) {//            if not in top row get col num to left
-                    as.push(this.model.current.rows[Tile.row][Tile.col-1]);
-                }
-                if(Tile.row < this.numRows - 1) {//            if not on right col get col to right
-                    as.push(this.model.current.rows[Tile.row+1][Tile.col]);
-                }
-                if(Tile.col < this.numCols - 1) {//            if not on bottom row get bottom col
-                    as.push(this.model.current.rows[Tile.row][Tile.col+1]);
+                switch(this.gameMode) {
+                    case 'CLASSIC-SURROUNDED-LOCK' :
+                        as.concat(this.getSurroundedTiles());
+                        break;
+                    case 'BLOOM' :
+                        if(Tile.row != 0) {//            if not in top row get col num above
+                            as.push(this.model.current.rows[Tile.row-1][Tile.col]);
+                        }
+                        if(Tile.col != 0) {//            if not in top row get col num to left
+                            as.push(this.model.current.rows[Tile.row][Tile.col-1]);
+                        }
+                        if(Tile.row < this.numRows - 1) {//            if not on right col get col to right
+                            as.push(this.model.current.rows[Tile.row+1][Tile.col]);
+                        }
+                        if(Tile.col < this.numCols - 1) {//            if not on bottom row get bottom col
+                            as.push(this.model.current.rows[Tile.row][Tile.col+1]);
+                        }
+
+                        //make sure none of the squares are locked
+                        for(i=0;i<as.length;i++) if(as[i].status == 'locked') as.splice(i,1);
+
+                        Tile.status = 'locked';
+                        break;
                 }
 
-                //make sure none of the squares are locked
-                for(i=0;i<as.length;i++) {
-                    console.log(as[i]);
-                    if(as[i].status == 'locked') as.splice(i,1);
-                }
 
-                Tile.status = 'locked';
                 as.push(Tile);
 
                 return as;
@@ -222,6 +261,7 @@ $(document).ready(function() {
 
                 if(typeof Tiles[i] !== 'undefined' && typeof Tiles[i].accessor !== 'undefined') {
                     Tiles[i].owner = this.playerList[this.currentPlayer];
+                    if(Tiles[i].status != 'locked') Tiles[i].status = 'owned';
                     this.setByRC(Tiles[i].row,Tiles[i].col, Tiles[i], true);
                 }
             }
