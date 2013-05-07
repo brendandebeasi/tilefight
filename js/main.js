@@ -9,8 +9,8 @@ $(document).ready(function() {
         this.accessorPattern            = /R([0-9]{1,2})C([0-9]{1,2})/;
         this.boardSelector              = '.bd';
         this.headerSelector             = 'header';
-        this.numRows                    = 10;
-        this.numCols                    = 10;
+        this.numRows                    = 8;
+        this.numCols                    = 8;
         this.lastTileClicked            = {};
         this.lastTilePreviewed          = {};
         this.client                     = {};
