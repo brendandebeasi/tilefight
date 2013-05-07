@@ -378,10 +378,10 @@ header .score.p1Active .p1 {
     opacity: 1;
 }
 header .score.p1Active .p2 {
-    opacity: .6;
+    background: #c9c9c9;
 }
-header .score.p2Active .p1.locked {
-    opacity: .6;
+header .score.p2Active .p1{
+    background: #c9c9c9;
 }
 header .score.p2Active .p2 {
     opacity: 1;

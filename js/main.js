@@ -273,8 +273,8 @@ $(document).ready(function() {
                 var br=this;//maintain backref
                 $(affectedTiles.join(', ')).switchClass( "p1,p2,p3,p4", "p" + (this.currentPlayer +1 ), 200,'easeInOutSine',function(){
                     br.render();
-                    br.endTurn();
                 });
+                    br.endTurn();
             }
         };
         this.getSurroundedTiles         = function() {
@@ -306,6 +306,8 @@ $(document).ready(function() {
             }
             return surroundedTiles;
         }
+
+
         this.getTouchingTiles           = function() {
 
         }
@@ -360,10 +362,10 @@ $(document).ready(function() {
         }
         this.endGame                    = function() {
             if(this.getScoreForPlayer(0) < this.getScoreForPlayer(1)) {
-                alert('Player 1 (red) wins!')
+                alert('Player 1 (blue) wins!')
             }
             else {
-                alert('Player 2 (blue) wins!')
+                alert('Player 2 (red) wins!')
             }
             window.location.reload();
         }
