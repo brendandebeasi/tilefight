@@ -287,11 +287,11 @@ $(document).ready(function() {
                 }
                 var br=this;//maintain backref
                 $(affectedTiles.join(', ').replace(accessor,'null')).switchClass('' , "p" + (this.currentPlayer +1 ), 200);
-                $('.'+accessor).switchClass("neutral" , "locked", 200);
-                $('.'+accessor).switchClass("" , "p" + (this.currentPlayer +1 ), 200);
-                window.setTimeout('tf.render()', 200);
-                window.setTimeout('tf.endTurn()',200);
-                window.setTimeout('tf.blockClicks = false',200);
+                $('.'+accessor).switchClass("neutral" , "locked", 400);
+                $('.'+accessor).switchClass("" , "p" + (this.currentPlayer +1 ), 400);
+                window.setTimeout('tf.render()', 400);
+                window.setTimeout('tf.endTurn()',400);
+                window.setTimeout('tf.blockClicks = false',400);
             }
         };
         this.getSurroundedTiles         = function() {
