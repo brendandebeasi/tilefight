@@ -5,6 +5,7 @@ $(document).ready(function() {
         this.$el                        = $el;
         this.turn                       = 'p1';
         this.currentPlayer              = {};
+        this.blockClicks                = false;//prevent players from making moves
         this.playerList                 = [];
         this.accessorPattern            = /R([0-9])C([0-9])/;
         this.boardSelector              = '.bd';
@@ -226,7 +227,7 @@ $(document).ready(function() {
         }
 
         this.bind                       = function() {
-            $('.row .col',$el).mousedown(function(e) {       that.previewMove(e);});
+            //$('.row .col',$el).mousedown(function(e) {       that.previewMove(e);});
             $('.row .col',$el).mouseup(function(e) {         that.makeMove(e);});
             $(window).resize(function() {
                that.client.determineSizes();
@@ -256,8 +257,8 @@ $(document).ready(function() {
         };
 
         this.makeMove                   = function(e){
-            if($(e.target).hasClass('col') && !$(e.target).hasClass('locked')) {
-
+            if($(e.target).hasClass('col') && !$(e.target).hasClass('locked') && !this.blockClicks) {
+                this.blockClicks = true;
                 var accessor = this.parseAccessorFromRawClass(e.target.className);
                 var Tile  = this.getByAccessor(accessor);
                 var Tiles = that.determineAffectedSquares(Tile);
@@ -271,10 +272,12 @@ $(document).ready(function() {
                     }
                 }
                 var br=this;//maintain backref
-                $(affectedTiles.join(', ')).switchClass( "p1,p2,p3,p4", "p" + (this.currentPlayer +1 ), 200,'easeInOutSine',function(){
-                    br.render();
-                });
-                    br.endTurn();
+                $(affectedTiles.join(', ').replace(accessor,'null')).switchClass('' , "p" + (this.currentPlayer +1 ), 200);
+                $('.'+accessor).switchClass("neutral" , "locked", 200);
+                $('.'+accessor).switchClass("" , "p" + (this.currentPlayer +1 ), 200);
+                window.setTimeout('tf.render()', 200);
+                window.setTimeout('tf.endTurn()',200);
+                window.setTimeout('tf.blockClicks = false',200);
             }
         };
         this.getSurroundedTiles         = function() {
@@ -359,6 +362,7 @@ $(document).ready(function() {
         this.endTurn                    = function() {
             if(this.currentPlayer < (this.playerList.length - 1)) this.currentPlayer++;
             else this.currentPlayer = 0;
+            console.log('player '+this.currentPlayer+'\'s turn.');
         }
         this.endGame                    = function() {
             if(this.getScoreForPlayer(0) < this.getScoreForPlayer(1)) {
