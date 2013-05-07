@@ -6,7 +6,7 @@ $(document).ready(function() {
         this.turn                       = 'p1';
         this.currentPlayer              = {};
         this.playerList                 = [];
-        this.accessorPattern            = /R([0-9]{1,2})C([0-9]{1,2})/;
+        this.accessorPattern            = /R([0-9])C([0-9])/;
         this.boardSelector              = '.bd';
         this.headerSelector             = 'header';
         this.numRows                    = 8;
@@ -35,13 +35,13 @@ $(document).ready(function() {
             this.class          = 0
         };
 
-        this.Models.Tile                    = Backbone.Model.extend({
-            row                             : null,
-            col                             : null,
-            status                          : 'neutral',
-            accessor                        : null,
-            owner                       : null
-        });
+        this.Models.Tile                = function() {
+            this.row                        = null;
+            this.col                        = null;
+            this.status                     = 'neutral';
+            this.accessor                   = null;
+            this.owner                      = null;
+        }
 
         this.Models.Client              = function($el) {
             var thisClient                  = this;
@@ -142,8 +142,10 @@ $(document).ready(function() {
             for(row=0;row<this.numRows;row++) {//                       create rows
                 modelToSave.rows[row] = new this.Models.Row;
                 for(col=0;col<this.numCols;col++) {//                   create cols inside rows
-                    var newTile = new this.Models.Tile;
-                    newTile.set({row: row, col: col, accessor: 'R'+row+'C'+col});
+                    var newTile = new this.Models.Tile();
+                    newTile.row=row;
+                    newTile.col=col;
+                    newTile.accessor='R'+row+'C'+col;
                     modelToSave.rows[row][col] = newTile;
                 }
             }
@@ -166,7 +168,6 @@ $(document).ready(function() {
 
                 if(typeof preview === 'undefined') preview = false;
                 preview ? modelToUse = this.model.preview : modelToUse = this.model.current;
-                debugger;
                 this.view.board = this.$el.find(this.boardSelector).html(this.Templates.Board(modelToUse));
                 this.view.header = this.$el.find(this.headerSelector).html(this.Templates.Head(modelToUse));
                 this.bind();
@@ -181,17 +182,16 @@ $(document).ready(function() {
 
         this.parseAccessor              = function(accessor) {
 
-            var matched = this.accessorPattern.exec(accessor);
+            var result = this.accessorPattern.exec(accessor);
 
             var returnData =  {
-                row: matched[1],
-                col: matched[2]
+                row: result[1],
+                col: result[2]
             };
             return returnData;
         };
 
         this.parseAccessorFromRawClass  = function(rawClass) {
-            debugger;
             var result = this.accessorPattern.exec(rawClass);
             return result[0];
         }
@@ -271,7 +271,7 @@ $(document).ready(function() {
                     }
                 }
                 var br=this;//maintain backref
-                $(affectedTiles.join(', ')).switchClass( "p1,p2,p3,p4", "p" + (this.currentPlayer +1 ), 175,'easeInOutSine',function(){
+                $(affectedTiles.join(', ')).switchClass( "p1,p2,p3,p4", "p" + (this.currentPlayer +1 ), 200,'easeInOutSine',function(){
                     br.render();
                     br.endTurn();
                 });
