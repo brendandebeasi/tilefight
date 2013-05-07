@@ -328,6 +328,8 @@ header .score {
 }
 .col {
     float: left;
+    text-align: center;
+    font-size: 1.5em;
 }
 .col, .score .p1.neutral, .score .p2.neutral {
     background: #d9d9d9;

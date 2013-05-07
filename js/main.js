@@ -8,6 +8,7 @@ $(document).ready(function() {
         this.blockClicks                = false;//prevent players from making moves
         this.playerList                 = [];
         this.accessorPattern            = /R([0-9])C([0-9])/;
+        this.playableLetters            = ''
         this.boardSelector              = '.bd';
         this.headerSelector             = 'header';
         this.numRows                    = 8;
@@ -39,6 +40,7 @@ $(document).ready(function() {
         this.Models.Tile                = function() {
             this.row                        = null;
             this.col                        = null;
+            this.letter                     = null;
             this.status                     = 'neutral';
             this.accessor                   = null;
             this.owner                      = null;
@@ -72,7 +74,7 @@ $(document).ready(function() {
             this.applySizing          = function() {
                 $el.find(that.headerSelector).css({height:this.header.h, width: this.header.w});
                 $el.find(that.boardSelector).css({height:this.container.h, width: this.container.w, margin: this.container.m,padding: this.container.p});
-                $el.find('.col').css({height:this.tile.h, width: this.tile.w, margin: this.tile.m});
+                $el.find('.col').css({height:this.tile.h, width: this.tile.w, margin: this.tile.m,lineHeight: this.tile.h + "px"});
             }
             this.determineTileSize          = function(cpn) {
                 //cpn is the container padding, so that needs to work out
@@ -122,6 +124,17 @@ $(document).ready(function() {
         this.Models.Row                 = function() {
         };
 
+        this.randomString               = function(len, charSet) {
+            len = len || 1;
+            charSet = charSet || 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            var randomString = '';
+            for (var i = 0; i < len; i++) {
+                var randomPoz = Math.floor(Math.random() * charSet.length);
+                randomString += charSet.substring(randomPoz,randomPoz+1);
+            }
+            return randomString;
+        }
+
         this.init                       = function() {
             var p1 = new this.Models.Owner;
             p1.name         = 'B-dizzle';
@@ -143,10 +156,11 @@ $(document).ready(function() {
             for(row=0;row<this.numRows;row++) {//                       create rows
                 modelToSave.rows[row] = new this.Models.Row;
                 for(col=0;col<this.numCols;col++) {//                   create cols inside rows
-                    var newTile = new this.Models.Tile();
-                    newTile.row=row;
-                    newTile.col=col;
-                    newTile.accessor='R'+row+'C'+col;
+                    var newTile         = new this.Models.Tile();
+                    newTile.row         = row;
+                    newTile.col         = col;
+                    newTile.accessor    = 'R'+row+'C'+col;
+                    newTile.letter      = this.randomString();
                     modelToSave.rows[row][col] = newTile;
                 }
             }
