@@ -16,7 +16,6 @@
         <link rel="stylesheet" href="css/vendor/jquery-ui-1.10.3.custom/css/custom-theme/jquery-ui-1.10.3.custom.min.css">
         <link rel="stylesheet" href="css/main.css">
         <script src="js/vendor/modernizr-2.6.2.min.js"></script>
-        <meta name="viewport" content="width=device-width, minimum-scale=1, maximum-scale=1">
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black" />
         <link rel="apple-touch-icon-precomposed" href="apple-touch-icon-57x57.png" />
@@ -32,16 +31,11 @@
                 }, 0);
             });
         </script>
-        <!-- standard viewport tag to set the viewport to the device's width
-        , Android 2.3 devices need this so 100% width works properly and
-        doesn't allow children to blow up the viewport width-->
-        <meta name="viewport" id="vp" content="initial-scale=1.0,user-scalable=no,maximum-scale=1,width=device-width" />
-        <!-- width=device-width causes the iPhone 5 to letterbox the app, so
-            we want to exclude it for iPhone 5 to allow full screen apps -->
-        <meta name="viewport" id="vp" content="initial-scale=1.0,user-scalable=no,maximum-scale=1" media="(device-height: 568px)" />
+        <meta content="initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+        <meta content="yes" name="apple-mobile-web-app-capable">
         <!-- provide the splash screens for iPhone 5 and previous -->
-        <link href="apple-touch-startup-image-320x460.png" rel="apple-touch-startup-image" media="(device-height: 568px)">
-        <link href="apple-touch-startup-image-650x920.png" rel="apple-touch-startup-image" sizes="640x960" media="(device-height: 480px)">
+        <link href="apple-touch-startup-image.png" rel="apple-touch-startup-image" media="(device-height: 568px)">
+        <link href="apple-touch-startup-image@2x.png" rel="apple-touch-startup-image" sizes="640x1096">
     </head>
     <body>
         <!--[if lt IE 7]>
