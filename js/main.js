@@ -11,7 +11,7 @@ $(document).ready(function() {
         this.playableLetters            = ''
         this.boardSelector              = '.bd';
         this.headerSelector             = 'header';
-        this.numRows                    = 8;
+        this.numRows                    = 10;
         this.numCols                    = 8;
         this.lastTileClicked            = {};
         this.lastTilePreviewed          = {};
