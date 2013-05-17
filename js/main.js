@@ -19,7 +19,9 @@ $(document).ready(function() {
         this.model                      = {
             'current'                       : {},
             'preview'                       : {}};
-        this.gameMode                   = 'BLOOM';//CLASSIC-SURROUNDED-LOCK,CLASSIC-TOUCHING-LOCK,BLOOM,BLOOM-PLUs,MAZE,RANDOM,SCATTER
+        //BLOOM,CLASSIC-SURROUNDED-LOCK,CLASSIC-TOUCHING-LOCK,BLOOM,BLOOM-PLUs,MAZE,RANDOM,SCATTER
+        this.gameMode                   = 'BLOOM';//TODO: Deprecate this
+        this.activeMode                 = {};
         this.gameModes                  = {};
         this.view                       = {};
         this.Templates                  = {};
@@ -27,7 +29,8 @@ $(document).ready(function() {
         this.Templates.Head             = Handlebars.compile($("#header-template").html());
         this.Models                     = {};
         this.Models.Board               = function() {
-            this.rows                       = [];};
+            this.rows                       = [];
+        };
         this.Models.Mode                = function() {
             this.boardSizes     = {};
             this.boardSizes.s   = {w:4,h:4};
@@ -169,33 +172,13 @@ $(document).ready(function() {
             this.playerList[1] = p2;
             this.currentPlayer = 0;
 
-            var modelToSave = new this.Models.Board;
-            for(row=0;row<this.numRows;row++) {//                       create rows
-                modelToSave.rows[row] = new this.Models.Row;
-                for(col=0;col<this.numCols;col++) {//                   create cols inside rows
-                    var newTile         = new this.Models.Tile();
-                    newTile.row         = row;
-//                    newTile.col         = col;
-                    newTile.col         = col;
-                    newTile.accessor    = 'R'+row+'C'+col;
-                    newTile.letter      = this.randomString();
-                    modelToSave.rows[row][col] = newTile;
-                }
-            }
-
-            this.model.current = modelToSave;//                                 save to model
-            this.model.preview = new this.Models.Board;//                                 save to model
-
-
-            this.declareHelpers();
-            this.render();//                                       fire renderBoard
-
             this.client = new this.Models.Client(this.$el);
-            this.render();
 
-            this.registerModes};//                                       fire renderBoard
+            this.registerModes();
+            this.startGame();
+        };//                                       fire renderBoard
 
-        this.registerModes              = function(defaultMode) {
+        this.registerModes              = function() {
             //BLOOM
             var bloom                       = new this.Models.Mode;
             bloom.rules.walls.enabled       = true;
@@ -203,7 +186,10 @@ $(document).ready(function() {
             bloom.rules.walls.removeEvery   = 15;
             bloom.rules.walls.removeHowMany = 1;
 
-            this.gameModes.bloom            = bloom;};
+            bloom.rules.letters.enabled = false;
+
+            this.gameModes.bloom            = bloom;
+        };
 
         this.render                     = function(preview) {
             //make sure the game hasn't ended (all tiles taken)
@@ -217,7 +203,8 @@ $(document).ready(function() {
                 this.bind();
                 if(typeof this.client !== 'undefined' && this.client.isPortrait != null) this.client.applySizing();
             }
-            else this.endGame(); };
+            else this.endGame();
+        };
 
         this.generateAccessor           = function(row,col) {
             return 'R' + row + 'C' + col;};
@@ -395,7 +382,33 @@ $(document).ready(function() {
             if(this.currentPlayer < (this.playerList.length - 1)) this.currentPlayer++;
             else this.currentPlayer = 0;
             this.blockClicks = false;
-            console.log('player '+this.currentPlayer+'\'s turn.');
+//            console.log('player '+this.currentPlayer+'\'s turn.');
+        }
+        this.startGame                  = function(mode) {
+            this.activeMode = this.gameModes.bloom;
+
+            var modelToSave = new this.Models.Board;
+            for(row=0;row<this.numRows;row++) {//                       create rows
+                modelToSave.rows[row] = new this.Models.Row;
+                for(col=0;col<this.numCols;col++) {//                   create cols inside rows
+                    var newTile         = new this.Models.Tile();
+                    newTile.row         = row;
+//                    newTile.col         = col;
+                    newTile.col         = col;
+                    newTile.accessor    = 'R'+row+'C'+col;
+
+                    if(this.activeMode.rules.letters.enabled) newTile.letter      = this.randomString();
+                    else newTile.letter = '';
+
+                    modelToSave.rows[row][col] = newTile;
+                }
+            }
+
+            this.model.current = modelToSave;//                                 save to model
+            this.model.preview = new this.Models.Board;//                                 save to model
+
+            this.declareHelpers();
+            this.render();//                                       fire renderBoard
         }
         this.endGame                    = function() {
             if(this.getScoreForPlayer(0) < this.getScoreForPlayer(1)) {
