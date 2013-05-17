@@ -1,4 +1,4 @@
-var sd,that;
+var tf,that;
 $(document).ready(function() {
     $.tf = function($el) {
         that                            = this;
@@ -11,71 +11,89 @@ $(document).ready(function() {
         this.playableLetters            = ''
         this.boardSelector              = '.bd';
         this.headerSelector             = 'header';
-        this.numRows                    = 10;
+        this.numRows                    = 8;
         this.numCols                    = 8;
         this.lastTileClicked            = {};
         this.lastTilePreviewed          = {};
         this.client                     = {};
         this.model                      = {
             'current'                       : {},
-            'preview'                       : {}
-        };
-
-        this.gameMode                   = 'BLOOM'//CLASSIC-SURROUNDED-LOCK,CLASSIC-TOUCHING-LOCK,BLOOM,BLOOM-PLUs,MAZE,RANDOM,SCATTER
+            'preview'                       : {}};
+        this.gameMode                   = 'BLOOM';//CLASSIC-SURROUNDED-LOCK,CLASSIC-TOUCHING-LOCK,BLOOM,BLOOM-PLUs,MAZE,RANDOM,SCATTER
+        this.gameModes                  = {};
         this.view                       = {};
         this.Templates                  = {};
         this.Templates.Board            = Handlebars.compile($("#board-template").html());
         this.Templates.Head             = Handlebars.compile($("#header-template").html());
         this.Models                     = {};
         this.Models.Board               = function() {
-            this.rows                       = [];
-        };
+            this.rows                       = [];};
+        this.Models.Mode                = function() {
+            this.boardSizes     = {};
+            this.boardSizes.s   = {w:4,h:4};
+            this.boardSizes.m   = {w:8,h:8};
+            this.boardSizes.l   = {w:16,h:16};
 
+            this.rules          = {};
+            this.rules.letters                  = {};
+            this.rules.letters.enabled          = false;
+            this.rules.letters.frequency        = false;//how many to create on the board (% * .01)
+            this.rules.letters.persistent       = false;//do walls get destroyed?
+            this.rules.letters.removeEvery      = 0;//remove walls every X turns
+            this.rules.letters.removeHowMany    = 0;//Amount of letters to remove (int or "random")
+            this.rules.letters.createEvery      = 0;//Create new letters every X turns
+            this.rules.letters.createHowMany    = 0;//how many letters to create every X turns
+
+            this.rules.tiles                        = {};
+            this.rules.tiles.click                  = 'BLOOM';//TODO: SINGLE
+            this.rules.tiles.allowableMoveRuleset   = 'ANYNOTLOCKED';//TODO: TWOPERTURN, TWOPERTURNADJOINED, DIAGONAL, ANY
+
+            this.rules.walls                = {};
+            this.rules.walls.enabled        = false;
+            this.rules.walls.frequency      = 0;//how many to create on the board (% * .01)
+            this.rules.walls.persistent     = false;//do walls get destroyed?
+            this.rules.walls.removeEvery    = 0;//remove walls every X turns (int or decimal (( % * .01))
+            this.rules.walls.removeHowMany  = 0;//Amount of walls to remove (int or "random")
+            this.rules.walls.createEvery    = 0;//Create new walls every X turns
+            this.rules.walls.createHowMany  = 0;//how many walls to create every X turns};
+        }
         this.Models.Owner                   = function() {
-            this.name           = null,
-            this.num            = 0,
-            this.class          = 0
-        };
-
+            this.name           = null;
+            this.num            = 0;
+            this.class          = 0;};
         this.Models.Tile                = function() {
             this.row                        = null;
+            this.type                       = null;
             this.col                        = null;
             this.letter                     = null;
             this.status                     = 'neutral';
             this.accessor                   = null;
-            this.owner                      = null;
-        }
-
+            this.owner                      = null;};
         this.Models.Client              = function($el) {
             var thisClient                  = this;
             this.perspective                = null;
             this.isPortrait                 = null;
             this.isLandscape                = null;
             this.viewport                   = {
-                w:  0,
-                h:  0
-            };
+                w   :0,
+                h   :0};
             this.container                  = {
                 w   : 0,
                 h   : 0,
                 m   : 0,
-                p   : 0
-            }
+                p   : 0};
             this.header                     = {
                 w   : 0,
-                h   : 0
-            }
+                h   : 0};
             this.tile                       = {
                 w   : 0,//width
                 h   : 0,//height
                 m   : 0,//margin
-                p   : 0//padding
-            }
+                p   : 0};//padding
             this.applySizing          = function() {
                 $el.find(that.headerSelector).css({height:this.header.h, width: this.header.w});
                 $el.find(that.boardSelector).css({height:this.container.h, width: this.container.w, margin: this.container.m,padding: this.container.p});
-                $el.find('.col').css({height:this.tile.h, width: this.tile.w, margin: this.tile.m,lineHeight: this.tile.h + "px"});
-            }
+                $el.find('.col').css({height:this.tile.h, width: this.tile.w, margin: this.tile.m,lineHeight: this.tile.h + "px"});}
             this.determineTileSize          = function(cpn) {
                 //cpn is the container padding, so that needs to work out
                 var spacePerTile;
@@ -92,9 +110,7 @@ $(document).ready(function() {
                 thisClient.tile = {
                     w   : ts,
                     h   : ts,
-                    m   : tm
-                };
-
+                    m   : tm};
             };
             this.determineSizes             = function() {
                 var cpn = 10;//container padding as an int
@@ -104,7 +120,6 @@ $(document).ready(function() {
                 this.viewport.w     = $el.parent().parent().width();
 
                 this.header.h       = $el.find('header').outerHeight();
-                this.header.w       = this.viewport.w;
 
                 this.determineTileSize(cpn);
 
@@ -112,8 +127,12 @@ $(document).ready(function() {
                 this.container.h    = this.viewport.h - this.header.h - (cpn*2);
                 this.container.w    = ((this.tile.w + (this.tile.m * 2)) * that.numCols) + (cpn*2);
                 this.container.m    = '0 ' + ((this.viewport.w - (this.tile.w + (this.tile.m * 2)) * that.numCols) / 2) + 'px';
+
+                this.header.w       = this.container.w;
+
                 this.applySizing();
-            }
+            };
+
             this.init                       = function() {
                 this.determineSizes();
             };
@@ -121,8 +140,7 @@ $(document).ready(function() {
             this.init();
         };
 
-        this.Models.Row                 = function() {
-        };
+        this.Models.Row                 = function() {};
 
         this.randomString               = function(len, charSet) {
             len = len || 1;
@@ -132,8 +150,7 @@ $(document).ready(function() {
                 var randomPoz = Math.floor(Math.random() * charSet.length);
                 randomString += charSet.substring(randomPoz,randomPoz+1);
             }
-            return randomString;
-        }
+            return randomString;};
 
         this.init                       = function() {
             var p1 = new this.Models.Owner;
@@ -158,6 +175,7 @@ $(document).ready(function() {
                 for(col=0;col<this.numCols;col++) {//                   create cols inside rows
                     var newTile         = new this.Models.Tile();
                     newTile.row         = row;
+//                    newTile.col         = col;
                     newTile.col         = col;
                     newTile.accessor    = 'R'+row+'C'+col;
                     newTile.letter      = this.randomString();
@@ -173,8 +191,19 @@ $(document).ready(function() {
             this.render();//                                       fire renderBoard
 
             this.client = new this.Models.Client(this.$el);
-            this.render();//                                       fire renderBoard
-        };
+            this.render();
+
+            this.registerModes};//                                       fire renderBoard
+
+        this.registerModes              = function(defaultMode) {
+            //BLOOM
+            var bloom                       = new this.Models.Mode;
+            bloom.rules.walls.enabled       = true;
+            bloom.rules.walls.frequency     = .15;
+            bloom.rules.walls.removeEvery   = 15;
+            bloom.rules.walls.removeHowMany = 1;
+
+            this.gameModes.bloom            = bloom;};
 
         this.render                     = function(preview) {
             //make sure the game hasn't ended (all tiles taken)
@@ -188,12 +217,10 @@ $(document).ready(function() {
                 this.bind();
                 if(typeof this.client !== 'undefined' && this.client.isPortrait != null) this.client.applySizing();
             }
-            else this.endGame();
-        };
+            else this.endGame(); };
 
         this.generateAccessor           = function(row,col) {
-            return 'R' + row + 'C' + col;
-        };
+            return 'R' + row + 'C' + col;};
 
         this.parseAccessor              = function(accessor) {
 
@@ -201,34 +228,31 @@ $(document).ready(function() {
 
             var returnData =  {
                 row: result[1],
-                col: result[2]
-            };
-            return returnData;
-        };
+                col: result[2]};
+            return returnData;};
 
         this.parseAccessorFromRawClass  = function(rawClass) {
             var result = this.accessorPattern.exec(rawClass);
-            return result[0];
-        }
+            return result[0];};
 
         this.getByAccessor              = function(accessor,preview) {
             if(typeof preview === 'undefined') preview = false;
             preview ? modelToUse = this.model.preview : modelToUse = this.model.current;
             var loc = this.parseAccessor(accessor);
 
-            return modelToUse['rows'][loc.row][loc.col];
-        }
+            return modelToUse['rows'][loc.row][loc.col];};
+
         this.getByRC                    = function(row,col,preview) {
             var modelToUse;
             if(typeof preview === 'undefined') preview = false;
             preview ? modelToUse = this.model.preview : modelToUse = this.model.current;
-            return modelToUse['rows'][row][col];
-        }
+            return modelToUse['rows'][row][col];};
+
         this.setByRC                    = function(row,col,Tile,preview) {
             var modelToUse;
             if(typeof preview === 'undefined') preview = false;
-            this.model.current['rows'][Tile.row][Tile.col] = Tile;
-        }
+            this.model.current['rows'][Tile.row][Tile.col] = Tile;};
+
         this.setByAccessor              = function(accessor,Tile,preview) {
             if(typeof Tile.accessor !== 'undefined') {
                 var modelToUse;
@@ -236,21 +260,18 @@ $(document).ready(function() {
                 var loc = this.parseAccessor(Tile.accessor);
 
                 modelToUse = this.model.current['rows'][Tile.row][Tile.col];
-                preview ? this.model.preview =  modelToUse : this.model.current = modelToUse;
-            }
-        }
+                preview ? this.model.preview =  modelToUse : this.model.current = modelToUse;};};
 
         this.bind                       = function() {
             //$('.row .col',$el).mousedown(function(e) {       that.previewMove(e);});
             $('.row .col',$el).mouseup(function(e) {         that.makeMove(e);});
             $(window).resize(function() {
                that.client.determineSizes();
-               that.client.applySizing();
-            });
-        }
+               that.client.applySizing();});};
+
         this.getScoreForPlayer          = function(playerNum) {
-            return this.$el.find('.col.p' + playerNum).length;
-        }
+            return this.$el.find('.col.p' + playerNum).length;};
+
         this.declareHelpers             = function() {
             var that = this;
             Handlebars.registerHelper('playerScore', function(playerNum) {
@@ -258,17 +279,16 @@ $(document).ready(function() {
             });
             Handlebars.registerHelper('activePlayerClass', function(playerNum) {
                 return 'p'+(that.currentPlayer+1)+'Active';
-            });
-        }
+            });};
 
-        this.previewMove                = function(e) {
+        this.previewMove                = function(e) {};
 //            if($(e.target).hasClass('col')) {
 //                var accessor = this.parseAccessorFromRawClass(e.target.className);
 //                var Tiles = this.determineAffectedSquares(this.getByAccessor(accessor));
 //                this.claimSquares(Tiles);
 //                this.render();
 //            }
-        };
+
 
         this.makeMove                   = function(e){
             if($(e.target).hasClass('col') && !$(e.target).hasClass('locked') && !this.blockClicks) {
@@ -282,16 +302,14 @@ $(document).ready(function() {
 
                 for(i=0;i<Tiles.length;i++) {
                     if(typeof Tiles[i] != 'undefined' && typeof Tiles[i].accessor != 'undefined') {
-                        affectedTiles.push('.'+Tiles[i].accessor);
-                    }
+                        affectedTiles.push('.'+Tiles[i].accessor);}
                 }
                 var br=this;//maintain backref
                 $(affectedTiles.join(', ').replace(accessor,'null')).switchClass('' , "p" + (this.currentPlayer +1 ), 200);
                 $('.'+accessor).switchClass("neutral" , "locked", 400);
                 $('.'+accessor).switchClass("" , "p" + (this.currentPlayer +1 ), 400);
-                window.setTimeout('tf.render()', 400);
-                window.setTimeout('tf.endTurn()',400);
-                window.setTimeout('tf.blockClicks = false',400);
+                window.setTimeout(function() {tf.render();}, 400);
+                window.setTimeout(function() {tf.endTurn();},400);
             }
         };
         this.getSurroundedTiles         = function() {
@@ -376,6 +394,7 @@ $(document).ready(function() {
         this.endTurn                    = function() {
             if(this.currentPlayer < (this.playerList.length - 1)) this.currentPlayer++;
             else this.currentPlayer = 0;
+            this.blockClicks = false;
             console.log('player '+this.currentPlayer+'\'s turn.');
         }
         this.endGame                    = function() {
@@ -389,5 +408,5 @@ $(document).ready(function() {
         }
         this.init();
     }
-    tf = new $.tf($('#main_contain'));
+    var tf = new $.tf($('#main_contain'));
 });

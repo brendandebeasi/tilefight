@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tilefight server test</title>
+    <script src="http://localhost:1338/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io.connect('http://localhost:1338');
+        socket.on('game-status', function (data) {
+            console.log(data);
+//            socket.emit('my other event', { my: 'data' });
+        });
+    </script>
+</head>
+<body>
+
+</body>
+</html>

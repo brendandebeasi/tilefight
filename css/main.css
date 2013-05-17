@@ -360,16 +360,22 @@ header .score {
     color: #ffffff;
 }
 header h1 {
-    /*display: none;*/
+    display: none;
     font-weight: normal;
     margin: 0;
     text-align: center;
     padding: .125em;
 }
+header .score {
+    margin: auto;
+    text-align: center;
+}
 header .score .p1, header .score .p2 {
     line-height: 1.75em;
     text-align: center;
-    width: 50%;
+    width: 2.5em;
+    height: 2.5em;
+    line-height: 2.5em;
 }
 
 .score .p1.neutral {
